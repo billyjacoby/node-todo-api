@@ -1,5 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const _ = require('lodash');
 const {ObjectID} = require('mongodb');
 
 var {mongoose} = require('./db/mongoose');
@@ -11,6 +12,7 @@ const port = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
 
+// used to add new info to DB
 app.post('/todos', (req, res) => {
   var todo = new Todo({
     text: req.body.text
@@ -50,6 +52,7 @@ app.get('/todos/:id', (req, res) => {
 
 });
 
+// used to delete info from DB
 app.delete('/todos/:id', (req, res) => {
   var id = req.params.id;
 
@@ -66,6 +69,35 @@ app.delete('/todos/:id', (req, res) => {
   }).catch((e) => {
     res.status(400).send();
   });
+
+});
+
+// used to update info on DB
+app.patch('/todos/:id', (req, res) => {
+  var id = req.params.id;
+  // the _.pick pulls the listed items off of the first parameter passed in
+  var body = _.pick(req.body, ['text', 'completed']);
+
+  if (!ObjectID.isValid(id)) {
+    res.status(404).send();
+  }
+
+  if (_.isBoolean(body.completed) && body.completed) {
+    body.completedAt = new Date().getTime();
+  } else {
+    body.completed = false;
+    body.completedAt = null;
+  }
+
+  Todo.findByIdAndUpdate(id, {$set: body}, {new: true}).then((todo) => {
+    if (!todo) {
+      return res.status(404).send();
+    }
+
+    res.send({todo});
+  }).catch((e) => {
+    res.status(400).send()
+  })
 
 });
 
