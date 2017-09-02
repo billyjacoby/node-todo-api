@@ -26,10 +26,6 @@ app.post('/todos', (req, res) => {
   });
 });
 
-app.get('/users/me', authenticate, (req, res) => {
-  res.send(req.user);
-});
-
 app.get('/todos', (req, res) => {
   Todo.find().then((todos) => {
     res.send({todos});
@@ -117,6 +113,23 @@ app.post('/users', (req, res) => {
     res.header('x-auth', token).send(user);
   }).catch((e) => {
     res.status(400).send(e)
+  });
+});
+
+app.get('/users/me', authenticate, (req, res) => {
+  res.send(req.user);
+});
+
+app.post('/users/login', (req, res) => {
+  var body = _.pick(req.body, ['email', 'password'])
+
+  User.findByCredentials(body.email, body.password).then((user) => {
+
+    return user.generateAuthToken().then((token) => {
+      res.header('x-auth', token).send(user);
+    })
+  }).catch((e) => {
+    res.status(400).send();
   });
 });
 
